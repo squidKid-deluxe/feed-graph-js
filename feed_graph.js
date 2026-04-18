@@ -202,6 +202,13 @@ async function settlement_price(rpc, data) {
     return -1;
 }
 
+function updateProgress(page, records, percent) {
+    const bar = document.getElementById("progressBarFill");
+    const text = document.getElementById("progressText");
+    if (bar) bar.style.width = percent + "%";
+    if (text) text.textContent = `Page ${page} • ${records} records • ${percent}%`;
+}
+
 async function kibana(start, stop, tokens, searchAfter = undefined) {
     const url = `https://es.bitshares.dev/bitshares-*/_async_search`;
 
@@ -293,6 +300,8 @@ async function kibana(start, stop, tokens, searchAfter = undefined) {
 async function paginate(rpc, start, stop, assets) {
     let data = [];
     let searchAfter;
+    let pageCount = 0;
+    const totalTimeRange = stop - start;
 
     while (true) {
         // Retrieve a page using search_after
@@ -320,11 +329,18 @@ async function paginate(rpc, start, stop, assets) {
         const result = await Promise.all(promises);
         data.push(...result);
 
+        // Update progress
+        pageCount++;
+        if (data.length > 0) {
+            const newest = data[0][1][0];
+            const oldest = data[data.length - 1][1][0];
+            const coveredRange = newest - oldest;
+            const percent = Math.min(100, Math.round((coveredRange / totalTimeRange) * 100));
+            updateProgress(pageCount, data.length, percent);
+        }
+
         if (!nextAfter) break;
         searchAfter = nextAfter;
-
-        // Rate limit: 1s between requests
-        await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     // Deduplicate by timestamp
@@ -450,9 +466,13 @@ function deleteAsset(asset){
 
 async function plot_feed() {
     const daysAgo = document.getElementById("daysAgoBox").value
-    // turn on the loading gif
-    let loadingGif = document.getElementById("loading");
-    loadingGif.style.display = "block";
+    // show progress bar
+    let loading = document.getElementById("loading");
+    loading.style.display = "block";
+    const bar = document.getElementById("progressBarFill");
+    const text = document.getElementById("progressText");
+    if (bar) bar.style.width = "0%";
+    if (text) text.textContent = "Starting...";
 
     // calculate start and stop times for potential kibana requests
     const startTime = Math.floor((Date.now() / 1000) - 86400 * daysAgo);
@@ -552,8 +572,8 @@ async function plot_feed() {
     //     Plotly.update('plotlyDiv', plotData, layout);
     // }
 
-    // get rid of the loading gif
-    loadingGif.style.display = "none";
+    // get rid of the loading/progress bar
+    loading.style.display = "none";
     // start = false;
 }
 

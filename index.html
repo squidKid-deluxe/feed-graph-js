@@ -14,15 +14,30 @@
     <style>
     #loading {
         position: fixed;
-        width: 50px;
         top: 10px;
         right: 10px;
-/*        transform: translate(-50%, -50%);*/
-        opacity: 0.7;
-        border: solid #ae9929f4 5px;
-        border-radius: 5px;
+        width: 150px;
+        opacity: 0.9;
         display: none;
         z-index: 2;
+    }
+    #progressBar {
+        height: 8px;
+        background-color: #333;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    #progressBarFill {
+        height: 100%;
+        background-color: #d8bc27;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+    #progressText {
+        color: #d8bc27;
+        font-size: 12px;
+        margin-top: 4px;
+        text-align: center;
     }
 
     body {
@@ -106,7 +121,10 @@
 </head>
 
 <body class="main">
-    <img id="loading" src="loading.gif"></img>
+    <div id="loading">
+        <div id="progressBar"><div id="progressBarFill"></div></div>
+        <div id="progressText"></div>
+    </div>
     <button id="fold" onclick="searchToggle(this)">⚙</button>
     <div id="searchTools" class="closed" tabindex="0" style="z-index:2;">
 <div id="overlay"></div>
