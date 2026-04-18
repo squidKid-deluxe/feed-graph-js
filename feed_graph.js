@@ -64,15 +64,16 @@ function publicNodes() {
     use these nodes for all operations
     */
     return [
-        "wss://api.bitshares.dev/wss",
+        "wss://api.bitshares.dev",
+        "wss://api.bts.mobi/wss",
         "wss://api.btslebin.com/ws",
         "wss://api.dex.trading",
-        "wss://public.xbts.io/wss",
+        "wss://node.xbts.io/ws",
         "wss://btsws.roelandp.nl/ws",
-        "wss://cloud.xbts.io/ws",
+        "wss://public.xbts.io/ws",
         "wss://dex.iobanker.com/ws",
-        "wss://node.xbts.io/wss"
-   ]
+        "wss://cloud.xbts.io/ws"
+    ]
 }
 
 async function wssHandshake() {
@@ -519,8 +520,10 @@ async function plot_feed() {
             mode: 'lines',
             name: label,
             line: {
-                color: ["yellow", "skyblue", "tomato", "lime green"]
-                    [Object.values(lookup).indexOf(label.split(
+                color: [
+        '#4FC3F7', '#EC407A', '#66BB6A', '#FFA726', '#AB47BC',
+        '#EF5350', '#29B6F6', '#26A69A', '#FFB74D', '#7986CB'
+    ][Object.values(lookup).indexOf(label.split(
                         " - ")[1])],
             }
         }));
@@ -536,7 +539,7 @@ async function plot_feed() {
 
     console.log(cachedGraphs, plotData)
 
-// Detect gaps and create shapes
+    // Detect gaps and create shapes
     const shapes = [];
     const gapThreshold = 7200;
 
@@ -563,7 +566,16 @@ async function plot_feed() {
 
     // initialize the plotly layout
     const layout = {
-        showlegend: false,
+        showlegend: true,
+        legend: {
+            x: 1,
+            xanchor: 'right',
+            y: 1,
+            yanchor: 'top',
+            bgcolor: '#000000aa',
+            bordercolor: '#d8bc27',
+            borderwidth: 1
+        },
         hovermode: "closest",
         title: 'Token Data Plot',
         xaxis: {
