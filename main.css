@@ -39,10 +39,12 @@ html, body {
 .searchRow {
     display: flex;
     gap: 4px;
+    align-items: stretch;
 }
 
 .searchRow input {
     flex: 1;
+    min-width: 0;
     background-color: var(--bg);
     color: var(--text);
     border: 1px solid var(--border);
@@ -52,8 +54,12 @@ html, body {
 
 .searchRow button {
     background-color: transparent;
-    border: none;
-    font-size: 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px;
+    color: var(--text);
+    width: 36px;
+    flex-shrink: 0;
 }
 
 #searchTools hr {
@@ -92,7 +98,27 @@ table {
     border-radius: 4px;
     max-height: 200px;
     overflow-y: auto;
+    font-size: 14px;
+}
+
+#searchTools input[type="number"] {
+    position: relative;
+}
+
+#searchTools input[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 4px 8px;
+    border-radius: 4px;
     font-size: 12px;
+    white-space: nowrap;
+    z-index: 10;
 }
 
 #plotlyDiv {
