@@ -535,12 +535,18 @@ async function plot_feed() {
 
     console.log(cachedGraphs, plotData)
 
-    // Detect gaps and create shapes
+    const defaultColors = [
+        "#636efa", "#EF553B", "#00cc96", "#ab63fa", "#FFA15A",
+        "#19d3f3", "#FF6690", "#B6E880", "#FF97FF", "#FECB52"
+    ];
+
     const shapes = [];
     const gapThreshold = 7200;
 
     for (const trace of plotData) {
         const timestamps = trace.x.map(d => d.getTime() / 1000 + (d.getTimezoneOffset() * 60));
+        const colorIndex = plotData.indexOf(trace) % defaultColors.length;
+        const traceColor = defaultColors[colorIndex];
         for (let i = 1; i < timestamps.length; i++) {
             const gap = timestamps[i] - timestamps[i - 1];
             if (gap > gapThreshold) {
@@ -551,7 +557,7 @@ async function plot_feed() {
                     y0: 0,
                     y1: 1,
                     yref: 'paper',
-                    fillcolor: trace.line.color,
+                    fillcolor: traceColor,
                     opacity: 0.25,
                     line: { width: 0 },
                     layer: 'below'
