@@ -540,30 +540,33 @@ async function plot_feed() {
         "#19d3f3", "#FF6690", "#B6E880", "#FF97FF", "#FECB52"
     ];
 
-    const shapes = [];
     const gapThreshold = 7200;
 
-    for (let traceIdx = 0; traceIdx < plotData.length; traceIdx++) {
-        const trace = plotData[traceIdx];
-        const timestamps = trace.x.map(d => d.getTime() / 1000 + (d.getTimezoneOffset() * 60));
-        const traceColor = defaultColors[traceIdx % defaultColors.length];
-        for (let i = 1; i < timestamps.length; i++) {
-            const gap = timestamps[i] - timestamps[i - 1];
-            if (gap > gapThreshold) {
-                shapes.push({
-                    type: 'rect',
-                    x0: new Date(timestamps[i - 1] * 1000),
-                    x1: new Date(timestamps[i] * 1000),
-                    y0: 0,
-                    y1: 0.02,
-                    yref: 'paper',
-                    fillcolor: traceColor,
-                    opacity: 1,
-                    line: { width: 0 },
-                    layer: 'above'
-                });
+    function generateShapes(traceColors) {
+        const shapes = [];
+        for (let traceIdx = 0; traceIdx < plotData.length; traceIdx++) {
+            const trace = plotData[traceIdx];
+            const timestamps = trace.x.map(d => d.getTime() / 1000 + (d.getTimezoneOffset() * 60));
+            const traceColor = traceColors[traceIdx] || defaultColors[traceIdx % defaultColors.length];
+            for (let i = 1; i < timestamps.length; i++) {
+                const gap = timestamps[i] - timestamps[i - 1];
+                if (gap > gapThreshold) {
+                    shapes.push({
+                        type: 'rect',
+                        x0: new Date(timestamps[i - 1] * 1000),
+                        x1: new Date(timestamps[i] * 1000),
+                        y0: 0,
+                        y1: 0.02,
+                        yref: 'paper',
+                        fillcolor: traceColor,
+                        opacity: 1,
+                        line: { width: 0 },
+                        layer: 'above'
+                    });
+                }
             }
         }
+        return shapes;
     }
 
     // initialize the plotly layout
@@ -592,28 +595,49 @@ async function plot_feed() {
             family: 'Courier New, monospace',
             color: '#ffffff'
         },
-        plot_bgcolor: "#111111aa",
+plot_bgcolor: "#111111aa",
         paper_bgcolor: "#11111100",
-        datarevision: Math.random(),
-        shapes: shapes,
+        datarevolution: Math.random(),
     };
 
     // plot everything
-    // if (start) {
-    // let chart = document.getElementById("plotlyDiv")
-    // chart.innerHTML = "";
     Plotly.react("plotlyDiv", JSON.parse(JSON.stringify(plotData)), layout, { responsive:true });
-    // Plotly.newPlot("chart-window", data, layout, {
-    //     displayModeBar: false
-    // });
 
-    // } else {
-    //     Plotly.update('plotlyDiv', plotData, layout);
-    // }
+    // get colors from rendered plot and update shapes
+    const chart = document.getElementById("plotlyDiv");
+    setTimeout(() => {
+        const plotColors = chart._fullLayout.legend;
+        const traceColors = chart._fullData.map(t => t.line.color);
+        const correctedShapes = [];
+
+        for (let traceIdx = 0; traceIdx < plotData.length; traceIdx++) {
+            const trace = plotData[traceIdx];
+            const timestamps = trace.x.map(d => d.getTime() / 1000 + (d.getTimezoneOffset() * 60));
+            const traceColor = traceColors[traceIdx] || defaultColors[traceIdx % defaultColors.length];
+            for (let i = 1; i < timestamps.length; i++) {
+                const gap = timestamps[i] - timestamps[i - 1];
+                if (gap > gapThreshold) {
+                    correctedShapes.push({
+                        type: 'rect',
+                        x0: new Date(timestamps[i - 1] * 1000),
+                        x1: new Date(timestamps[i] * 1000),
+                        y0: 0,
+                        y1: 0.02,
+                        yref: 'paper',
+                        fillcolor: traceColor,
+                        opacity: 1,
+                        line: { width: 0 },
+                        layer: 'above'
+                    });
+                }
+            }
+        }
+
+        Plotly.relayout(chart, { shapes: correctedShapes });
+    });
 
     // get rid of the loading/progress bar
     loading.style.display = "none";
-    // start = false;
 }
 
 
