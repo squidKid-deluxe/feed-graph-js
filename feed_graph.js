@@ -606,34 +606,70 @@ plot_bgcolor: "#111111aa",
     // get colors from rendered plot and update shapes
     const chart = document.getElementById("plotlyDiv");
     setTimeout(() => {
-        const plotColors = chart._fullLayout.legend;
         const traceColors = chart._fullData.map(t => t.line.color);
-        const correctedShapes = [];
 
+        const outages = [];
         for (let traceIdx = 0; traceIdx < plotData.length; traceIdx++) {
             const trace = plotData[traceIdx];
             const timestamps = trace.x.map(d => d.getTime() / 1000 + (d.getTimezoneOffset() * 60));
-            const traceColor = traceColors[traceIdx] || defaultColors[traceIdx % defaultColors.length];
             for (let i = 1; i < timestamps.length; i++) {
                 const gap = timestamps[i] - timestamps[i - 1];
                 if (gap > gapThreshold) {
-                    correctedShapes.push({
-                        type: 'rect',
-                        x0: new Date(timestamps[i - 1] * 1000),
-                        x1: new Date(timestamps[i] * 1000),
-                        y0: 0,
-                        y1: 0.02,
-                        yref: 'paper',
-                        fillcolor: traceColor,
-                        opacity: 1,
-                        line: { width: 0 },
-                        layer: 'above'
+                    outages.push({
+                        start: timestamps[i - 1],
+                        end: timestamps[i],
+                        color: traceColors[traceIdx] || defaultColors[traceIdx % defaultColors.length]
                     });
                 }
             }
         }
 
-        Plotly.relayout(chart, { shapes: correctedShapes });
+        outages.sort((a, b) => a.start - b.start);
+
+        const stackedShapes = [];
+        const rows = [];
+        const barHeight = 0.02;
+
+        for (const outage of outages) {
+            let placed = false;
+            for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
+                const lastInRow = rows[rowIdx][rows[rowIdx].length - 1];
+                if (outage.start >= lastInRow.end) {
+                    rows[rowIdx].push(outage);
+                    stackedShapes.push({
+                        type: 'rect',
+                        x0: new Date(outage.start * 1000),
+                        x1: new Date(outage.end * 1000),
+                        y0: rowIdx * barHeight,
+                        y1: (rowIdx + 1) * barHeight,
+                        yref: 'paper',
+                        fillcolor: outage.color,
+                        opacity: 1,
+                        line: { width: 0 },
+                        layer: 'above'
+                    });
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) {
+                rows.push([outage]);
+                stackedShapes.push({
+                    type: 'rect',
+                    x0: new Date(outage.start * 1000),
+                    x1: new Date(outage.end * 1000),
+                    y0: (rows.length - 1) * barHeight,
+                    y1: rows.length * barHeight,
+                    yref: 'paper',
+                    fillcolor: outage.color,
+                    opacity: 1,
+                    line: { width: 0 },
+                    layer: 'above'
+                });
+            }
+        }
+
+        Plotly.relayout(chart, { shapes: stackedShapes });
     });
 
     // get rid of the loading/progress bar
