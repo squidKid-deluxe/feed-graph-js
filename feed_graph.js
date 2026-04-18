@@ -555,12 +555,12 @@ async function plot_feed() {
                     x0: new Date(timestamps[i - 1] * 1000),
                     x1: new Date(timestamps[i] * 1000),
                     y0: 0,
-                    y1: 1,
+                    y1: 0.02,
                     yref: 'paper',
                     fillcolor: traceColor,
-                    opacity: 0.25,
+                    opacity: 1,
                     line: { width: 0 },
-                    layer: 'below'
+                    layer: 'above'
                 });
             }
         }
