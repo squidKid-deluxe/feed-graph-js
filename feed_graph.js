@@ -520,11 +520,7 @@ async function plot_feed() {
             mode: 'lines',
             name: label,
             line: {
-                color: [
-        '#4FC3F7', '#EC407A', '#66BB6A', '#FFA726', '#AB47BC',
-        '#EF5350', '#29B6F6', '#26A69A', '#FFB74D', '#7986CB'
-    ][Object.values(lookup).indexOf(label.split(
-                        " - ")[1])],
+                color: undefined
             }
         }));
 
