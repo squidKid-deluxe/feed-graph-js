@@ -543,10 +543,10 @@ async function plot_feed() {
     const shapes = [];
     const gapThreshold = 7200;
 
-    for (const trace of plotData) {
+    for (let traceIdx = 0; traceIdx < plotData.length; traceIdx++) {
+        const trace = plotData[traceIdx];
         const timestamps = trace.x.map(d => d.getTime() / 1000 + (d.getTimezoneOffset() * 60));
-        const colorIndex = plotData.indexOf(trace) % defaultColors.length;
-        const traceColor = defaultColors[colorIndex];
+        const traceColor = defaultColors[traceIdx % defaultColors.length];
         for (let i = 1; i < timestamps.length; i++) {
             const gap = timestamps[i] - timestamps[i - 1];
             if (gap > gapThreshold) {
