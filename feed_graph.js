@@ -55,6 +55,7 @@ var precisions = {};
 var idsAndNames = {};
 var cachedGraphs = new Object();
 var rpc = null;
+const rpcPool = new GrapheneRPCPool();
 var plottables = new Array();
 
 
@@ -75,45 +76,10 @@ function publicNodes() {
 }
 
 async function wssHandshake() {
-    /**
-     * Create a websocket handshake.
-     */
-    const nodes = publicNodes();
-    let rpc;
-    while (true) {
-        const node = nodes[0];
-        const start = Date.now();
-        try {
-            rpc = new WebSocket(node);
-            rpc.onopen = function() {
-                console.log('WebSocket connection established.');
-            };
-            rpc.onerror = function(error) {
-                console.error('WebSocket error: ', error);
-            };
-            rpc.onclose = function(event) {
-                if (event.wasClean) {
-                    console.log('WebSocket connection closed cleanly.');
-                } else {
-                    console.error(
-                        'WebSocket connection died unexpectedly: ',
-                        event);
-                }
-            };
-            while (!rpc.readyState) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                if (Date.now() - start > 3000) {
-                    continue;
-                }
-            }
-        } catch (error) {
-            console.error('Error creating WebSocket connection: ', error);
-            nodes.push(nodes.shift());
-            continue;
-        }
-        break;
-    }
-    return rpc;
+    // Obtain an active GrapheneRPC instance from the pool
+    const instance = await rpcPool.getActiveInstance();
+    // Return the underlying WebSocket for compatibility with existing code
+    return instance.ws;
 }
 
 function wssQuery(rpc, params) {
@@ -236,13 +202,15 @@ async function settlement_price(rpc, data) {
     return -1;
 }
 
-async function kibana(start, stop, tokens) {
+async function kibana(start, stop, tokens, searchAfter = undefined) {
     const url = `https://es.bitshares.dev/bitshares-*/_async_search`;
 
     const headers = {
         'Content-Type': 'application/json'
     };
 
+    // Standard pagination using `search_after` (browser‑compatible)
+    // Build request payload, optionally adding `search_after`
     const requestData = {
         sort: [{
             "block_data.block_time": {
@@ -257,6 +225,7 @@ async function kibana(start, stop, tokens) {
             }
         }],
         track_total_hits: false,
+        size: 10000,
         fields: [{
             field: "operation_history.op_object.publisher.keyword"
         }, {
@@ -266,29 +235,20 @@ async function kibana(start, stop, tokens) {
         }, {
             field: "operation_history.op_object.feed.settlement_price.base.asset_id"
         }],
-        size: 10000,
-        version: true,
-        script_fields: {},
-        stored_fields: ["*"],
-        runtime_mappings: {},
         _source: false,
         query: {
             bool: {
                 must: [],
                 filter: [{
                     bool: {
-                        should: tokens.map(token => {
-                            return {
-                                bool: {
-                                    should: [{
-                                        match: {
-                                            "operation_history.op_object.feed.settlement_price.base.asset_id": token
-                                        }
-                                    }],
-                                    minimum_should_match: 1
-                                }
-                            };
-                        }),
+                        should: tokens.map(token => ({
+                            bool: {
+                                should: [{
+                                    match: { "operation_history.op_object.feed.settlement_price.base.asset_id": token }
+                                }],
+                                minimum_should_match: 1
+                            }
+                        })),
                         minimum_should_match: 1
                     }
                 }, {
@@ -299,47 +259,48 @@ async function kibana(start, stop, tokens) {
                             lte: to_iso_date(stop)
                         }
                     }
-                }],
-                should: [],
-                must_not: []
+                }]
             }
-        },
-        highlight: {
-            pre_tags: ["@kibana-highlighted-field@"],
-            post_tags: ["@/kibana-highlighted-field@"],
-            fields: {
-                "*": {}
-            },
-            fragment_size: 2147483647
         }
     };
 
+    if (searchAfter) {
+        requestData.search_after = searchAfter;
+    }
 
-    let response = await axios.post(url, requestData, {
-        headers
+    // Perform POST request using native fetch
+    let resp = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestData)
     });
+    let response = await resp.json();
 
-    if (response.data.is_running) {
-        response = await axios.get("https://es.bts.mobi/_async_search/" + response.data.id + "?wait_for_completion_timeout=99999999s", {
+    // If the async search is still running, poll until completion
+    if (response.is_running) {
+        let pollResp = await fetch(`https://es.bitshares.dev/_async_search/${response.id}?wait_for_completion_timeout=99999999s`, {
+            method: 'GET',
             headers
         });
+        response = await pollResp.json();
     }
-    return response.data;
+
+    const hits = response.response.hits.hits;
+    const nextSearchAfter = hits.length ? hits[hits.length - 1].sort : undefined;
+    return { hits, searchAfter: nextSearchAfter };
 }
 
 async function paginate(rpc, start, stop, assets) {
     let data = [];
-    let sizeChange = 1;
-    let page = 0;
+    let searchAfter;
 
-    while (sizeChange > 0) {
-        page++;
-        console.log("tokens", assets, "page", page, "size_change", sizeChange,
-            "start", start, "stop", stop);
+    while (true) {
+        // Retrieve a page using search_after
+        const { hits, searchAfter: nextAfter } = await kibana(start, stop, assets, searchAfter);
 
-        const kibanaResponse = (await kibana(start, stop, assets)).response.hits.hits;
+        if (!hits.length) break;
 
-        const response = kibanaResponse.map(hit => {
+        const processed = hits.map(hit => {
             const hfil = Object.values(hit.fields);
             return {
                 fields: {
@@ -352,37 +313,31 @@ async function paginate(rpc, start, stop, assets) {
             };
         });
 
-
-        // Create an array to store all the promises
-        const promises = response.map(async entry => {
-            // Inside the map function, return a promise for each iteration
+        const promises = processed.map(async entry => {
             return [entry.fields.producer, [entry.sort, await settlement_price(rpc, entry.fields), entry.fields.token]];
         });
-        await new Promise(resolve => setTimeout(resolve, 500))
 
-        // Wait for all promises to resolve
         const result = await Promise.all(promises);
-
-
-        sizeChange = data.length
-
-        // Now you can use the result array, which contains the resolved values for all promises
         data.push(...result);
 
-        // Remove duplicate entries
-        data = [...new Map(data.map(v => [JSON.stringify(v), v])).values()];
+        if (!nextAfter) break;
+        searchAfter = nextAfter;
 
-        sizeChange = data.length - sizeChange;
-        data.sort((a, b) => a[1][0] - b[1][0]);
-        try {
-            stop = data[0][1][0];
-        } catch {
-            console.error("Result is empty! Callin' it good...")
-            sizeChange = 0
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Rate limit: 1s between requests
+        await new Promise(resolve => setTimeout(resolve, 1000));
     }
+
+    // Deduplicate by timestamp
+    const seen = new Set();
+    data = data.filter(entry => {
+        const ts = entry[1][0];
+        if (seen.has(ts)) return false;
+        seen.add(ts);
+        return true;
+    });
+
+    // Keep data ordered by timestamp
+    data.sort((a, b) => a[1][0] - b[1][0]);
 
     return data;
 }
@@ -421,40 +376,28 @@ async function getData(rpc, start, stop, assets, asset_names) {
 }
 
 async function idsFromNames(rpc, names) {
+    // `rpc` is ignored; we use the global rpcPool for lookups
     let ids = [];
-    let required = []
-    for (name of names) {
-        if (idsAndNames[name] != undefined) {
+    let required = [];
+    for (const name of names) {
+        if (idsAndNames[name] !== undefined) {
             while (idsAndNames[name] === "waiting") {
-                await new Promise(resolve => setTimeout(resolve, 100))
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
             ids.push(idsAndNames[name]);
         } else {
             required.push(name);
         }
     }
-    for (name of required) {
-        idsAndNames[name] = "waiting"
-        let response = await new Promise((resolve) => {
-            wssQuery(rpc, ["database", "lookup_asset_symbols", [
-                [name]
-            ]]);
-            rpc.onmessage = resolve;
-        });
-        try {
-            if (!JSON.parse(response.data).result) {
-                throw new Error("no response")
-            }
-            response = JSON.parse(response.data).result;
-        } catch (error) {
-            console.log(response);
-            throw error;
-        }
-        id = response[0] ? response[0].id : null;
+    for (const name of required) {
+        idsAndNames[name] = "waiting";
+        // Direct query via the pool (returns result array)
+        const result = await rpcPool.query("database", ["lookup_asset_symbols", [[name]]]);
+        const id = result[0] ? result[0].id : null;
         idsAndNames[name] = id;
         ids.push(id);
     }
-    return ids
+    return ids;
 }
 
 async function searchAssets() {

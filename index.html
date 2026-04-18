@@ -6,9 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Token Data Plot</title>
     <!-- Plotly.js -->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-3.5.0.min.js"></script>
     <!-- Axios -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="graphene-rpc.js"></script>
     <link rel="stylesheet" href="main.css">
     <style>
     #loading {
@@ -52,27 +53,33 @@
         margin:auto;
     }
     #searchTools {
-        background-color:#000000dd;
+        background-color:#000000ee;
         z-index:1;
         position:absolute;
         height:auto;
         overflow:hidden;
-        pointer-events: none;
         transform: rotateX(180deg);
         transform-origin: center -100px;
         transition: transform 0.7s ease-out;
-        border:1px solid gold;
-        border-radius:5px;
-        padding:10px;
+        border:2px solid gold;
+        border-radius:8px;
+        padding:12px;
+        box-shadow: 0 0 15px rgba(216, 188, 39, 0.4);
+    }
+    #searchTools.closed {
+        pointer-events: none;
     }
     #fold {
         z-index:2;
-        border:1px solid gold;
-        border-radius:5px;
-        background-color:#000000dd;
-        width:25px;
-        height:25px;
-        color:#d8bc27
+        border:2px solid gold;
+        border-radius:8px;
+        background-color:#000000ee;
+        width:40px;
+        height:40px;
+        font-size:20px;
+        color:#d8bc27;
+        margin:15px;
+        box-shadow: 0 0 10px rgba(216, 188, 39, 0.5);
     }
     table{
         border:1px solid white;
@@ -85,14 +92,24 @@
         color: #d8bc27;
         border:1px solid gold;
         border-radius:5px;
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+    button:hover {
+        background-color:#333333ee;
+        border-color: #fff;
+    }
+    button:active {
+        background-color:#d8bc27;
+        color: #000;
     }
     </style>
 </head>
 
 <body class="main">
     <img id="loading" src="loading.gif"></img>
-    <button id="fold" onclick="searchToggle(this)">🞁</button>
-    <div id="searchTools">
+    <button id="fold" onclick="searchToggle(this)">⚙</button>
+    <div id="searchTools" class="closed" tabindex="0" style="z-index:2;">
+<div id="overlay"></div>
         <input type="search" id="tokenSearch" name="tokenSearch" placeholder="Token Search" onkeydown="if (event.keyCode == 13) {document.getElementById('searchButton').click()}" />
         <input type="number" id="daysAgoBox" name="daysAgoBox" placeholder="Number of days past"/>
         <button id="searchButton" onclick='dispSearch()'>Search</button>
@@ -104,25 +121,40 @@
         </table>
     </div>
     <div id="plotlyDiv"></div>
-    <footer class="plotFooter">
-        <hr>
-        <p>Website created by <a href="https://www.github.com/squidKid-deluxe">squidKid-deluxe</a>, imagined by <a href="https://www.github.com/litepresence">litepresence</a></p>
-    </footer>
+    
 </body>
 <script src="feed_graph.js"></script>
 <script>
 function searchToggle(self) {
-    let tools = document.getElementById("searchTools")
-    if (self.innerHTML == "🞃") {
+    let tools = document.getElementById("searchTools");
+    if (self.innerHTML == "✕") {
         tools.style.transform = "rotateX(180deg)";
-        tools.style.pointerEvents = "none";
-        self.innerHTML = "🞁";
+        tools.classList.add("closed");
+        self.innerHTML = "⚙";
     } else {
         tools.style.transform = "rotateX(0deg)";
-        tools.style.pointerEvents = "auto";
-        self.innerHTML = "🞃";
+        tools.classList.remove("closed");
+        self.innerHTML = "✕";
     }
 }
+
+// Close search tools when clicking outside the tools panel or toggle button
+document.addEventListener('click', function(event) {
+    const tools = document.getElementById('searchTools');
+    const toggle = document.getElementById('fold');
+    const isOpen = toggle.innerHTML == "✕";
+    const hasFocus = tools.contains(document.activeElement) || tools === document.activeElement;
+
+    // If click is on toggle or inside searchTools (has focus), don't close
+    if (toggle.contains(event.target) || hasFocus) return;
+
+    // Close if open
+    if (isOpen) {
+        tools.style.transform = "rotateX(180deg)";
+        tools.classList.add("closed");
+        toggle.innerHTML = "⚙";
+    }
+});
 </script>
 
 </html>

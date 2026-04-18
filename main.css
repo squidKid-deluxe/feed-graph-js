@@ -1,4 +1,8 @@
 /* NOTE: This is also the CSS for HONEST.GOLD, yes there is superfluous styling here */
+#overlay {
+    display: none;
+}
+
 
 /*Colors:
 
