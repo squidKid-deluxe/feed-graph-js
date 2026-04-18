@@ -1,138 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Token Data Plot</title>
-    <!-- Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-3.5.0.min.js"></script>
-    <!-- Axios -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-<script src="graphene-rpc.js"></script>
+    <script src="graphene-rpc.js"></script>
     <link rel="stylesheet" href="main.css">
-    <style>
-    #loading {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 40px;
-        background-color: #0d1117ee;
-        border-bottom: 2px solid #d8bc27;
-        display: none;
-        z-index: 100;
-    }
-    #progressBar {
-        height: 6px;
-        background-color: #333;
-        position: absolute;
-        top: 17px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 60%;
-        border-radius: 3px;
-        overflow: hidden;
-    }
-    #progressBarFill {
-        height: 100%;
-        background-color: #d8bc27;
-        width: 0%;
-        transition: width 0.3s ease;
-    }
-    #progressText {
-        color: #d8bc27;
-        font-size: 12px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    body {
-        background-color: #0d1117;
-        color: #d8bc27;
-    }
-
-    .plotFooter {
-        transform: scaleY(0.1);
-        background-color:#d8bc27dd;
-        bottom:-50px;
-        position:fixed;
-        z-index:2;
-        width:100%;
-        transition: transform 0.5s ease, bottom 0.5s ease, background-color 0.5s ease;
-    }
-    .plotFooter:hover {
-        background-color:#000000bb;
-        transition: transform 0.5s ease, bottom 0.5s ease, background-color 0.5s ease;
-        bottom:0px;
-        transform: scaleY(1);
-    }
-    #plotlyDiv {
-        width: calc(100vw - 280px);
-        height: calc(100vh - 60px);
-        border:1px solid white;
-        border-radius:5px;
-        margin: 50px 20px 20px 280px;
-    }
-    #searchTools {
-        background-color:#000000ee;
-        z-index:1;
-        position:fixed;
-        top: 40px;
-        left: 0;
-        width: 260px;
-        height: calc(100vh - 40px);
-        overflow-y:auto;
-        border:2px solid gold;
-        border-radius:8px;
-        padding:12px;
-        box-shadow: 0 0 15px rgba(216, 188, 39, 0.4);
-    }
-    table{
-        border:1px solid white;
-        border-radius:5px;
-        max-height:300px;
-        overflow:scroll;
-    }
-    input, button {
-        background-color:#222222dd;
-        color: #d8bc27;
-        border:1px solid gold;
-        border-radius:5px;
-        transition: background-color 0.2s, border-color 0.2s;
-    }
-    button:hover {
-        background-color:#333333ee;
-        border-color: #fff;
-    }
-    button:active {
-        background-color:#d8bc27;
-        color: #000;
-    }
-    </style>
 </head>
-
-<body class="main">
+<body>
     <div id="loading">
         <div id="progressBar"><div id="progressBarFill"></div></div>
         <div id="progressText"></div>
     </div>
-    <div id="searchTools" tabindex="0">
-        <input type="search" id="tokenSearch" name="tokenSearch" placeholder="Token Search" onkeydown="if (event.keyCode == 13) {document.getElementById('searchButton').click()}" />
-        <input type="number" id="daysAgoBox" name="daysAgoBox" placeholder="Number of days past"/>
-        <button id="searchButton" onclick='dispSearch()'>Search</button>
-        <button onclick='plot_feed(2)'>Plot</button>
-        <br>
-        <table id="searchResults" style="display:inline-block">
-        </table>
-        <table id="selectedTokens" style="display:inline-block">
-        </table>
+    <div class="layout">
+        <div id="searchTools">
+            <input type="search" id="tokenSearch" placeholder="Token Search" onkeydown="if(event.keyCode==13)document.getElementById('searchButton').click()">
+            <input type="number" id="daysAgoBox" placeholder="Days ago" value="7">
+            <button id="searchButton" onclick="dispSearch()">Search</button>
+            <button onclick="plot_feed()">Plot</button>
+            <table id="searchResults"></table>
+            <table id="selectedTokens"></table>
+        </div>
+        <div id="plotlyDiv"></div>
     </div>
-    <div id="plotlyDiv"></div>
-    
+    <script src="feed_graph.js"></script>
 </body>
-<script src="feed_graph.js"></script>
-
 </html>
