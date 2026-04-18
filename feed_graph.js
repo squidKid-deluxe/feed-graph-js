@@ -232,7 +232,7 @@ async function kibana(start, stop, tokens, searchAfter = undefined) {
             }
         }],
         track_total_hits: false,
-        size: 10000,
+        size: 3000,
         fields: [{
             field: "operation_history.op_object.publisher.keyword"
         }, {
