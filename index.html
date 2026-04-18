@@ -70,40 +70,25 @@
         transform: scaleY(1);
     }
     #plotlyDiv {
-        width: 80vw;
-        height: 80vh;
+        width: calc(100vw - 280px);
+        height: calc(100vh - 60px);
         border:1px solid white;
         border-radius:5px;
-        margin:auto;
+        margin: 50px 20px 20px 280px;
     }
     #searchTools {
         background-color:#000000ee;
         z-index:1;
-        position:absolute;
-        height:auto;
-        overflow:hidden;
-        transform: rotateX(180deg);
-        transform-origin: center -100px;
-        transition: transform 0.7s ease-out;
+        position:fixed;
+        top: 40px;
+        left: 0;
+        width: 260px;
+        height: calc(100vh - 40px);
+        overflow-y:auto;
         border:2px solid gold;
         border-radius:8px;
         padding:12px;
         box-shadow: 0 0 15px rgba(216, 188, 39, 0.4);
-    }
-    #searchTools.closed {
-        pointer-events: none;
-    }
-    #fold {
-        z-index:2;
-        border:2px solid gold;
-        border-radius:8px;
-        background-color:#000000ee;
-        width:40px;
-        height:40px;
-        font-size:20px;
-        color:#d8bc27;
-        margin:15px;
-        box-shadow: 0 0 10px rgba(216, 188, 39, 0.5);
     }
     table{
         border:1px solid white;
@@ -134,13 +119,11 @@
         <div id="progressBar"><div id="progressBarFill"></div></div>
         <div id="progressText"></div>
     </div>
-    <button id="fold" onclick="searchToggle(this)">⚙</button>
-    <div id="searchTools" class="closed" tabindex="0" style="z-index:2;">
-<div id="overlay"></div>
+    <div id="searchTools" tabindex="0">
         <input type="search" id="tokenSearch" name="tokenSearch" placeholder="Token Search" onkeydown="if (event.keyCode == 13) {document.getElementById('searchButton').click()}" />
         <input type="number" id="daysAgoBox" name="daysAgoBox" placeholder="Number of days past"/>
         <button id="searchButton" onclick='dispSearch()'>Search</button>
-        <button onclick='searchToggle(document.getElementById("fold"));plot_feed(2)'>Plot</button>
+        <button onclick='plot_feed(2)'>Plot</button>
         <br>
         <table id="searchResults" style="display:inline-block">
         </table>
@@ -151,37 +134,5 @@
     
 </body>
 <script src="feed_graph.js"></script>
-<script>
-function searchToggle(self) {
-    let tools = document.getElementById("searchTools");
-    if (self.innerHTML == "✕") {
-        tools.style.transform = "rotateX(180deg)";
-        tools.classList.add("closed");
-        self.innerHTML = "⚙";
-    } else {
-        tools.style.transform = "rotateX(0deg)";
-        tools.classList.remove("closed");
-        self.innerHTML = "✕";
-    }
-}
-
-// Close search tools when clicking outside the tools panel or toggle button
-document.addEventListener('click', function(event) {
-    const tools = document.getElementById('searchTools');
-    const toggle = document.getElementById('fold');
-    const isOpen = toggle.innerHTML == "✕";
-    const hasFocus = tools.contains(document.activeElement) || tools === document.activeElement;
-
-    // If click is on toggle or inside searchTools (has focus), don't close
-    if (toggle.contains(event.target) || hasFocus) return;
-
-    // Close if open
-    if (isOpen) {
-        tools.style.transform = "rotateX(180deg)";
-        tools.classList.add("closed");
-        toggle.innerHTML = "⚙";
-    }
-});
-</script>
 
 </html>
