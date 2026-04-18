@@ -35,7 +35,7 @@ A web-based tool for searching and plotting the price feed of any Margin Positio
 
 - Plotly.js (via CDN)
 - GrapheneRPC (included)
--Bitshares Elasticsearch index (es.bitshares.dev)
+- Bitshares Elasticsearch index (es.bitshares.dev)
 
 ## Notes
 
