@@ -536,6 +536,31 @@ async function plot_feed() {
 
     console.log(cachedGraphs, plotData)
 
+// Detect gaps and create shapes
+    const shapes = [];
+    const gapThreshold = 7200;
+
+    for (const trace of plotData) {
+        const timestamps = trace.x.map(d => d.getTime() / 1000 + (d.getTimezoneOffset() * 60));
+        for (let i = 1; i < timestamps.length; i++) {
+            const gap = timestamps[i] - timestamps[i - 1];
+            if (gap > gapThreshold) {
+                shapes.push({
+                    type: 'rect',
+                    x0: new Date(timestamps[i - 1] * 1000),
+                    x1: new Date(timestamps[i] * 1000),
+                    y0: 0,
+                    y1: 1,
+                    yref: 'paper',
+                    fillcolor: trace.line.color,
+                    opacity: 0.25,
+                    line: { width: 0 },
+                    layer: 'below'
+                });
+            }
+        }
+    }
+
     // initialize the plotly layout
     const layout = {
         showlegend: false,
@@ -548,7 +573,6 @@ async function plot_feed() {
         yaxis: {
             title: 'Price',
             color: "#fff",
-            // type: "log",
         },
         font: {
             family: 'Courier New, monospace',
@@ -557,6 +581,7 @@ async function plot_feed() {
         plot_bgcolor: "#111111aa",
         paper_bgcolor: "#11111100",
         datarevision: Math.random(),
+        shapes: shapes,
     };
 
     // plot everything
