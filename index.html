@@ -16,12 +16,16 @@
     </div>
     <div class="layout">
         <div id="searchTools">
-            <input type="search" id="tokenSearch" placeholder="Token Search" onkeydown="if(event.keyCode==13)document.getElementById('searchButton').click()">
-            <button id="searchButton" onclick="dispSearch()">Search</button>
+            <div class="searchRow">
+                <input type="search" id="tokenSearch" placeholder="Token Search" onkeydown="if(event.keyCode==13)document.getElementById('searchButton').click()">
+                <button id="searchButton" onclick="dispSearch()">🔍</button>
+            </div>
             <table id="searchResults"></table>
+            <hr>
             <table id="selectedTokens"></table>
+            <hr>
             <input type="number" id="daysAgoBox" placeholder="Days ago" value="7">
-            <button onclick="plot_feed()">Plot</button>
+            <button class="plotButton" onclick="plot_feed()">Plot</button>
         </div>
         <div id="plotlyDiv"></div>
     </div>
