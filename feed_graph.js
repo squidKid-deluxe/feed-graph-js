@@ -612,14 +612,23 @@ plot_bgcolor: "#111111aa",
         for (let traceIdx = 0; traceIdx < plotData.length; traceIdx++) {
             const trace = plotData[traceIdx];
             const timestamps = trace.x.map(d => d.getTime() / 1000 + (d.getTimezoneOffset() * 60));
-            for (let i = 1; i < timestamps.length; i++) {
-                const gap = timestamps[i] - timestamps[i - 1];
-                if (gap > gapThreshold) {
+            if (timestamps.length > 0) {
+                if (timestamps[0] > startTime + gapThreshold) {
                     outages.push({
-                        start: timestamps[i - 1],
-                        end: timestamps[i],
+                        start: startTime,
+                        end: timestamps[0],
                         color: traceColors[traceIdx] || defaultColors[traceIdx % defaultColors.length]
                     });
+                }
+                for (let i = 1; i < timestamps.length; i++) {
+                    const gap = timestamps[i] - timestamps[i - 1];
+                    if (gap > gapThreshold) {
+                        outages.push({
+                            start: timestamps[i - 1],
+                            end: timestamps[i],
+                            color: traceColors[traceIdx] || defaultColors[traceIdx % defaultColors.length]
+                        });
+                    }
                 }
             }
         }
