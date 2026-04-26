@@ -57,6 +57,7 @@ var cachedGraphs = new Object();
 var rpc = null;
 const rpcPool = new GrapheneRPCPool();
 var plottables = new Array();
+var searchDebounceTimer = null;
 
 
 function publicNodes() {
@@ -448,6 +449,11 @@ async function searchAssets() {
 async function dispSearch() {
     const results = await searchAssets();
     document.getElementById("searchResults").innerHTML = results.map(i => `<tr onclick="addAsset('${i}')"><td>${i}</td></tr>`).join("\n");
+}
+
+function onSearchInput() {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(dispSearch, 1000);
 }
 
 function addAsset(asset){

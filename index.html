@@ -17,7 +17,7 @@
     <div class="layout">
         <div id="searchTools">
             <div class="searchRow">
-                <input type="search" id="tokenSearch" placeholder="Token Search" onkeydown="if(event.keyCode==13)document.getElementById('searchButton').click()">
+                <input type="search" id="tokenSearch" placeholder="Token Search" oninput="onSearchInput()">
                 <button id="searchButton" onclick="dispSearch()">🔍</button>
             </div>
             <table id="searchResults"></table>
