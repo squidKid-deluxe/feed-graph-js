@@ -619,13 +619,6 @@ plot_bgcolor: "#111111aa",
             const trace = plotData[traceIdx];
             const timestamps = trace.x.map(d => d.getTime() / 1000 + (d.getTimezoneOffset() * 60));
             if (timestamps.length > 0) {
-                if (timestamps[0] > startTime + gapThreshold) {
-                    outages.push({
-                        start: startTime,
-                        end: timestamps[0],
-                        color: traceColors[traceIdx] || defaultColors[traceIdx % defaultColors.length]
-                    });
-                }
                 for (let i = 1; i < timestamps.length; i++) {
                     const gap = timestamps[i] - timestamps[i - 1];
                     if (gap > gapThreshold) {
@@ -636,7 +629,25 @@ plot_bgcolor: "#111111aa",
                         });
                     }
                 }
+                const lastTimestamp = timestamps[timestamps.length - 1];
+                if (stopTime - lastTimestamp > gapThreshold) {
+                    outages.push({
+                        start: lastTimestamp,
+                        end: stopTime,
+                        color: traceColors[traceIdx] || defaultColors[traceIdx % defaultColors.length]
+                    });
+                }
             }
+        }
+
+        const firstDataPoints = plotData.map(trace => trace.x[0] ? trace.x[0].getTime() / 1000 : Infinity);
+        const earliestData = Math.min(...firstDataPoints);
+        if (earliestData > startTime + gapThreshold) {
+            outages.push({
+                start: startTime,
+                end: earliestData,
+                color: '#ffffff'
+            });
         }
 
         outages.sort((a, b) => a.start - b.start);
